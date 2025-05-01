@@ -7,26 +7,27 @@ fi
 
 input_dir="$1"
 output_dir="$2"
+max_depth="$3"
 
-find "$input_dir" -type f | while read -r file; do
+find "$input_dir" -maxdepth "$depth" -type f | while read -r file; do
     filename=$(basename "$file")
     target="$output_dir/$filename"
 
     if [ -e "$target" ]; then
-        n=1
+        i=1
         name="${filename%.*}"
         ext="${filename##*.}"
 
         if [ "$name" = "$filename" ]; then
-            while [ -e "$output_dir/${name}${n}" ]; do
-                n=$((n + 1))
+            while [ -e "$output_dir/${name}${i}" ]; do
+                i=$((i + 1))
             done
-            filename="${name}${n}"
+            filename="${name}${i}"
         else
-            while [ -e "$output_dir/${name}${n}.${ext}" ]; do
-                n=$((n + 1))
+            while [ -e "$output_dir/${name}${i}.${ext}" ]; do
+                i=$((i + 1))
             done
-            filename="${name}${n}.${ext}"
+            filename="${name}${i}.${ext}"
         fi
     fi
 

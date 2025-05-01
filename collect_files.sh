@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 input_dir output_dir"
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 input_dir output_dir [--max_depth N]"
     exit 1
 fi
 
@@ -12,6 +12,8 @@ max_depth=""
 if [ "$3" == "--max_depth" ] && [ -n "$4" ]; then
     max_depth="$4"
 fi
+
+mkdir -p "$output_dir"
 
 if [ -n "$max_depth" ]; then
     find_command=(find "$input_dir" -maxdepth "$max_depth" -type f)

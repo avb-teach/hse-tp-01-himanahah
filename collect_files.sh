@@ -22,26 +22,33 @@ else
 fi
 
 while read -r file; do
-    filename=$(basename "$file")
-    target="$output_dir/$filename"
+    relative_path="${file#$input_dir/}"
 
-    if [ -e "$target" ]; then
+    destination_dir="$output_dir/$(dirname "$relative_path")"
+
+    mkdir -p "$destination_dir"
+
+    filename=$(basename "$file")
+    destination_file="$destination_dir/$filename"
+
+    if [ -e "$destination_file" ]; then
         i=1
         name="${filename%.*}"
         ext="${filename##*.}"
 
         if [ "$name" = "$filename" ]; then
-            while [ -e "$output_dir/${name}${i}" ]; do
+            while [ -e "$destination_dir/${name}${i}" ]; do
                 i=$((i + 1))
             done
             filename="${name}${i}"
         else
-            while [ -e "$output_dir/${name}${i}.${ext}" ]; do
+            while [ -e "$destination_dir/${name}${i}.${ext}" ]; do
                 i=$((i + 1))
             done
             filename="${name}${i}.${ext}"
         fi
+        destination_file="$destination_dir/$filename"
     fi
 
-    cp "$file" "$output_dir/$filename"
+    cp "$file" "$destination_file"
 done < <("${find_command[@]}")

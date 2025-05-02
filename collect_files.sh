@@ -1,54 +1,65 @@
 #!/bin/bash
 
-if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 input_dir output_dir [--max_depth N]"
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 [--max_depth N] <input_dir> <output_dir>"
     exit 1
+fi
+
+max_depth=-1
+if [ "$1" = "--max_depth" ]; then
+    max_depth="$2"
+    shift 2
 fi
 
 input_dir="$1"
 output_dir="$2"
-max_depth=""
 
-if [ "$3" == "--max_depth" ] && [ -n "$4" ]; then
-    max_depth="$4"
+if [ ! -d "$input_dir" ]; then
+    echo "Error: '$input_dir' not a directory"
+    exit 1
 fi
 
 mkdir -p "$output_dir"
 
-if [ -n "$max_depth" ]; then
-    find_command=(find "$input_dir" -maxdepth "$max_depth" -type f)
-else
-    find_command=(find "$input_dir" -type f)
-fi
+for file in $(find "$input_dir" -type f); do
+    rel="${file#$input_dir/}"
 
-while read -r file; do
-    relative_path="${file#$input_dir/}"
+    depth=$(echo "$rel" | awk -F"/" '{print NF-1}')
 
-    destination_dir="$output_dir/$(dirname "$relative_path")"
-
-    mkdir -p "$destination_dir"
-
-    filename=$(basename "$file")
-    destination_file="$destination_dir/$filename"
-
-    if [ -e "$destination_file" ]; then
-        i=1
-        name="${filename%.*}"
-        ext="${filename##*.}"
-
-        if [ "$name" = "$filename" ]; then
-            while [ -e "$destination_dir/${name}${i}" ]; do
-                i=$((i + 1))
-            done
-            filename="${name}${i}"
+    if [ $max_depth -ge 0 ]; then
+        if [ $depth -gt $max_depth ]; then
+            if [ $max_depth -gt 0 ]; then
+                prefix=$(echo "$rel" | cut -d/ -f1-$max_depth)
+                target="$output_dir/$prefix"
+            else
+                target="$output_dir"
+            fi
         else
-            while [ -e "$destination_dir/${name}${i}.${ext}" ]; do
-                i=$((i + 1))
-            done
-            filename="${name}${i}.${ext}"
+            dname=$(dirname "$rel")
+            if [ "$dname" = "." ]; then
+                target="$output_dir"
+            else
+                target="$output_dir/$dname"
+            fi
         fi
-        destination_file="$destination_dir/$filename"
+    else
+        target="$output_dir"
     fi
 
-    cp "$file" "$destination_file"
-done < <("${find_command[@]}")
+    mkdir -p "$target"
+
+    fname=$(basename "$rel")
+    dst="$target/$fname"
+
+    if [ -e "$dst" ]; then
+        base="${fname%.*}"
+        ext="${fname##*.}"
+        cnt=1
+        while [ -e "$target/${base}_$cnt.$ext" ]; do
+            cnt=$((cnt+1))
+        done
+        dst="$target/${base}_$cnt.$ext"
+    fi
+
+    cp "$file" "$dst"
+done
